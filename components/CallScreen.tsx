@@ -27,20 +27,17 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-const APP_ID = "554dfa0bac3d41b2b76a7944ed9b5eee";
-const TOKEN =
-  "007eJxTYLiitz2Pq9ayf+/SW3K8bfqBrAVK7WHyIQ8yBSaHTWXO5VFgMDU1SUlLNEhKTDZOMTFMMkoyN0s0tzQxSU2xTDJNTU1NyL2a0RDIyPBo/X1mRgYIBPE5GRJLUzLzDUvyDRkYABM4H2I="; // optional during dev
+const APP_ID = "7933231f139a4207b1d63d9bb3a7be15";
 
 type CallMode = "audio" | "video";
 
 type Params = {
   from: CallMode;
-  username?: string;
   channel?: string;
 };
 
 const CallScreen: React.FC = () => {
-  const { from, username, channel } = useLocalSearchParams<Params>();
+  const { from, channel } = useLocalSearchParams<Params>();
   const { user, logout } = useUser();
   const [callMode, setCallMode] = useState<CallMode>(from);
   const [videoDisabled, setVideoDisabled] = useState<boolean>(from == "audio");
@@ -53,7 +50,6 @@ const CallScreen: React.FC = () => {
   const { top, bottom } = useSafeAreaInsets();
 
   // Use dynamic values or fallback to defaults
-  const currentUsername = username || user?.username || "User";
   const currentChannel = channel || user?.channel || "audio1to1";
 
   useEffect(() => {
@@ -85,12 +81,11 @@ const CallScreen: React.FC = () => {
     await engine.current?.release();
     setJoined(false);
     logout();
-    router.replace('/');
+    router.replace("/");
   };
 
   const init = async () => {
     await getPermission();
-
     const eng = createAgoraRtcEngine();
     eng.initialize({ appId: APP_ID });
     eventHandler.current = {
@@ -110,6 +105,9 @@ const CallScreen: React.FC = () => {
         setRemoteUid(uid);
         handleCallEnd();
       },
+      onError: (err: any, msg: string) => {
+        console.log("on error: ", err, msg);
+      },
     };
     eng.registerEventHandler(eventHandler.current);
     engine.current = eng;
@@ -120,7 +118,7 @@ const CallScreen: React.FC = () => {
       return;
     }
     // Join the channel as a broadcaster
-    engine.current?.joinChannel(TOKEN, currentChannel, 0, {
+    engine.current?.joinChannel(undefined, currentChannel, 0, {
       // Set channel profile to live broadcast
       channelProfile: ChannelProfileType.ChannelProfileCommunication,
       // Set user role to broadcaster
@@ -162,7 +160,6 @@ const CallScreen: React.FC = () => {
         style={stylesVideo.bottomLinearGradient}
       />
       <View style={stylesVideo.header}>
-        <Text style={stylesVideo.name}>{currentUsername}</Text>
         {!isCalling && (
           <TouchableOpacity onPress={rotateCamera}>
             <FontAwesome6
@@ -210,7 +207,6 @@ const CallScreen: React.FC = () => {
             <Image source={ProfileImage} style={styles.profileImage} />
           </View>
         </View>
-        <Text style={styles.name}>{currentUsername}</Text>
         {isCalling && <Text style={styles.calling}>Calling...</Text>}
       </View>
       <View style={[styles.btmBtnsContainer, { marginBottom: bottom }]}>
@@ -292,6 +288,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.InterRegular,
     color: Colors.black,
     textAlign: "center",
+    marginTop: wp(5),
   },
   btmBtnsContainer: {
     flexDirection: "row",
